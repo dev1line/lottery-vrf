@@ -1,0 +1,72 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "INFTLotteryPool",
+  "sourceName": "contracts/NFTLotteryPoolFactory.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_prizeAddress",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_prizeId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint64",
+          "name": "_startDate",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "_endDate",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint32",
+          "name": "_minTicketsToSell",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "_maxTickets",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "_maxTicketsPerAddress",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_ticketPrice",
+          "type": "uint256"
+        }
+      ],
+      "name": "initialize",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

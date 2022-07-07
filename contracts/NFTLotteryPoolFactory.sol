@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/utils/ERC721HolderUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/CountersUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/ClonesUpgradeable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/structs/EnumerableSetUpgradeable.sol";
 
 interface INFTLotteryPool {
     function initialize(
@@ -20,32 +28,75 @@ interface INFTLotteryPool {
     function transferOwnership(address newOwner) external;
 }
 
-contract NFTLotteryPoolFactory is Ownable {
-    using SafeERC20 for IERC20;
+contract NFTLotteryPoolFactory is
+    Initializable,
+    OwnableUpgradeable,
+    ERC721HolderUpgradeable,
+    ReentrancyGuardUpgradeable
+{
+    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using CountersUpgradeable for CountersUpgradeable.Counter;
+    using EnumerableSetUpgradeable for EnumerableSetUpgradeable.UintSet;
+    CountersUpgradeable.Counter private _poolCounter;
 
-    address public immutable linkAddress;
-    address public immutable distributorAddress;
-    uint256 public immutable fee;
+    address public linkAddress;
+    address public distributorAddress;
+    uint256 public fee;
 
-    uint256 public poolFee = 0.01 ether;
+    uint256 public poolFee;
     address public template;
+    struct PoolInfo {
+        address poolAddr;
+        address nftAddr;
+        uint256 tokenId;
+    }
+    mapping(uint256 => PoolInfo) public poolIdToPoolInfos;
+    mapping(address => EnumerableSetUpgradeable.UintSet)
+        private _ownerToPoolIds;
 
-    event LotteryDeployed(address a, address deployer);
+    event LotteryDeployed(address pool, address deployer);
 
-    constructor(
+    function initialize(
         address _distributorAddress,
         address _linkAddress,
         uint256 _fee,
         address _template
-    ) {
+    ) public initializer {
+        OwnableUpgradeable.__Ownable_init();
         linkAddress = _linkAddress;
         distributorAddress = _distributorAddress;
         fee = _fee;
         template = _template;
+        poolFee = 0.001 ether;
+    }
+
+    function getAllPool() public view returns (PoolInfo[] memory) {
+        PoolInfo[] memory allPools;
+        for (uint256 i = 0; i < _poolCounter.current(); i++) {
+            allPools[i] = poolIdToPoolInfos[i + 1];
+        }
+        return allPools;
+    }
+
+    function transferNft(address nftAddr, uint256 tokenId) public nonReentrant {
+        IERC721Upgradeable(nftAddr).safeTransferFrom(
+            _msgSender(),
+            address(this),
+            tokenId
+        );
+        _poolCounter.increment();
+        uint256 currentId = _poolCounter.current();
+        bytes32 salt = bytes32(currentId);
+        INFTLotteryPool pool = INFTLotteryPool(
+            ClonesUpgradeable.cloneDeterministic(template, salt)
+        );
+
+        PoolInfo memory newInfo = PoolInfo(address(pool), nftAddr, tokenId);
+        poolIdToPoolInfos[currentId] = newInfo;
+        _ownerToPoolIds[_msgSender()].add(currentId);
     }
 
     function createNFTLotteryPool(
-        bytes32 salt,
         address _prizeAddress,
         uint256 _prizeId,
         uint64 _startDate,
@@ -54,12 +105,20 @@ contract NFTLotteryPoolFactory is Ownable {
         uint32 _maxTickets,
         uint32 _maxTicketsPerAddress,
         uint256 _ticketPrice
-    ) external payable returns (address) {
+    ) public payable nonReentrant {
         require(msg.value >= poolFee, "Pay fee");
-        INFTLotteryPool pool = INFTLotteryPool(
-            ClonesUpgradeable.cloneDeterministic(template, salt)
+        address pool;
+        for (uint256 i = 0; i < _poolCounter.current(); i++) {
+            PoolInfo memory item = poolIdToPoolInfos[i + 1];
+            if (item.nftAddr == _prizeAddress && item.tokenId == _prizeId) {
+                pool = item.poolAddr;
+            }
+        }
+        require(
+            pool != address(0),
+            "ERROR: Non Exist Pool, Please check your transfer"
         );
-        pool.initialize(
+        INFTLotteryPool(pool).initialize(
             _prizeAddress,
             _prizeId,
             _startDate,
@@ -71,20 +130,20 @@ contract NFTLotteryPoolFactory is Ownable {
         );
 
         // Transfers ownership of pool to caller
-        pool.transferOwnership(msg.sender);
+        INFTLotteryPool(pool).transferOwnership(msg.sender);
 
         // // Approve
-        IERC721(_prizeAddress).approve(address(pool), _prizeId);
+        IERC721Upgradeable(_prizeAddress).approve(pool, _prizeId);
+
         // // Escrows the LINK and NFT prize
-        IERC721(_prizeAddress).safeTransferFrom(
+        IERC721Upgradeable(_prizeAddress).safeTransferFrom(
             address(this),
-            address(pool),
+            pool,
             _prizeId
         );
-        IERC20(linkAddress).safeTransferFrom(msg.sender, address(pool), fee);
+        IERC20Upgradeable(linkAddress).safeTransferFrom(msg.sender, pool, fee);
 
-        emit LotteryDeployed(address(pool), msg.sender);
-        return address(pool);
+        emit LotteryDeployed(pool, msg.sender);
     }
 
     function getLotteryAddress(bytes32 salt) public view returns (address) {
@@ -95,7 +154,7 @@ contract NFTLotteryPoolFactory is Ownable {
         poolFee = f;
     }
 
-    function claimETH() public onlyOwner {
+    function claimETH() public onlyOwner nonReentrant {
         payable(owner()).transfer(address(this).balance);
     }
 }
