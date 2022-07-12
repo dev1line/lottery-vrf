@@ -28,7 +28,7 @@ async function main() {
     nft.address
   );
   console.log("nft deployed in:", nft.address);
-
+  console.log("nftVerify deployed in:", nftVerify);
   const distributor = await Distributor.deploy(
     process.env.VRF_COORDINATOR,
     process.env.LINK,
@@ -48,14 +48,16 @@ async function main() {
       nftLotteryPool.address,
     ]
   );
-
+  await nftLotteryPoolFactory.deployed();
+  console.log(
+    "nftLotteryPoolFactory deployed in:",
+    nftLotteryPoolFactory.address
+  );
   const nftLotteryPoolFactoryVerify = await upgrades.erc1967.getImplementationAddress(
     nftLotteryPoolFactory.address
   );
-  console.log("nft deployed in:", nft.address);
   console.log(
-    "nftLotteryPoolFactory deployed in:",
-    nftLotteryPoolFactory.address,
+    "nftLotteryPoolFactoryVerify deployed in:",
     nftLotteryPoolFactoryVerify
   );
 

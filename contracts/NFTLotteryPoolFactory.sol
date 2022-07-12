@@ -46,6 +46,7 @@ contract NFTLotteryPoolFactory is
     uint256 public poolFee;
     address public template;
     struct PoolInfo {
+        address seller;
         address poolAddr;
         address nftAddr;
         uint256 tokenId;
@@ -91,7 +92,12 @@ contract NFTLotteryPoolFactory is
             ClonesUpgradeable.cloneDeterministic(template, salt)
         );
 
-        PoolInfo memory newInfo = PoolInfo(address(pool), nftAddr, tokenId);
+        PoolInfo memory newInfo = PoolInfo(
+            _msgSender(),
+            address(pool),
+            nftAddr,
+            tokenId
+        );
         poolIdToPoolInfos[currentId] = newInfo;
         _ownerToPoolIds[_msgSender()].add(currentId);
     }
