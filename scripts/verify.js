@@ -2,6 +2,21 @@ const hre = require("hardhat");
 const contracts = require("../contracts-verify.json");
 
 async function main() {
+  console.log("VERIFY: NapaCats");
+  try {
+    await hre.run("verify:verify", {
+      address: contracts.napaCats,
+      constructorArguments: [
+        "Napa NapaCats",
+        "NMC",
+        "ipfs://QmXZEBJJ6d9D6DU9yYQG1pJMKsUYcUso662HAgyo1wjWoa/",
+      ],
+      contract: "contracts/NapaCats.sol:NapaCats",
+    });
+  } catch (err) {
+    console.log("err :>> ", err);
+  }
+
   try {
     await hre.run("verify:verify", {
       address: contracts.nft,

@@ -37,10 +37,10 @@ const config = {
       url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
       accounts: [process.env.DEPLOY_ACCOUNT],
     },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
-      accounts: [process.env.DEPLOY_ACCOUNT],
-    },
+    // rinkeby: {
+    //   url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
+    //   accounts: [process.env.DEPLOY_ACCOUNT],
+    // },
     // mainnet: {
     //   url: 'https://bsc-dataseed1.ninicoin.io',
     //   accounts: [process.env.DEPLOY_ACCOUNT],
@@ -51,8 +51,8 @@ const config = {
     count: 100,
   },
   etherscan: {
-    // apiKey: process.env.BINANCE_API_KEY,
-    apiKey: process.env.VERIFY_SCAN_KEY,
+    apiKey: process.env.BINANCE_API_KEY,
+    // apiKey: process.env.VERIFY_SCAN_KEY,
   },
   solidity: {
     compilers: [

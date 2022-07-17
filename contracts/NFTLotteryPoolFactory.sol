@@ -72,7 +72,7 @@ contract NFTLotteryPoolFactory is
     }
 
     function getAllPool() public view returns (PoolInfo[] memory) {
-        PoolInfo[] memory allPools;
+        PoolInfo[] memory allPools = new PoolInfo[](_poolCounter.current());
         for (uint256 i = 0; i < _poolCounter.current(); i++) {
             allPools[i] = poolIdToPoolInfos[i + 1];
         }

@@ -8,13 +8,21 @@ async function main() {
   const accounts = await ethers.getSigners();
   const addresses = accounts.map((item) => item.address);
   const admin = addresses[0];
-
+  const NapaCats = await ethers.getContractFactory("NapaCats");
   const NFT = await ethers.getContractFactory("NFTCreator");
   const NFTLotteryPool = await ethers.getContractFactory("NFTLotteryPool");
   const Distributor = await ethers.getContractFactory("Distributor");
   const NFTLotteryPoolFactory = await ethers.getContractFactory(
     "NFTLotteryPoolFactory"
   );
+
+  const napaCats = await NapaCats.deploy(
+    "Napa NapaCats",
+    "NMC",
+    "ipfs://QmXZEBJJ6d9D6DU9yYQG1pJMKsUYcUso662HAgyo1wjWoa/"
+  );
+  await napaCats.deployed();
+  console.log("NapaCats deployed to:", napaCats.address);
 
   const nft = await upgrades.deployProxy(NFT, [
     admin,
@@ -63,6 +71,7 @@ async function main() {
 
   const contractAddresses = {
     admin: admin,
+    napaCats: napaCats.address,
     nft: nft.address,
     distributor: distributor.address,
     nftLotteryPool: nftLotteryPool.address,
@@ -73,6 +82,7 @@ async function main() {
 
   const contractAddresses_verify = {
     admin: admin,
+    napaCats: napaCats.address,
     nft: nftVerify,
     distributor: distributor.address,
     nftLotteryPool: nftLotteryPool.address,

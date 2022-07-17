@@ -35,7 +35,7 @@ interface IDistributor {
 }
 
 contract NFTLotteryPool is
-    ERC721Upgradeable,
+    ERC721EnumerableUpgradeable,
     OwnableUpgradeable,
     ERC721HolderUpgradeable,
     ReentrancyGuardUpgradeable
@@ -113,21 +113,33 @@ contract NFTLotteryPool is
         }
     }
 
-    function unlockRefund() public {
-        require(block.timestamp > endDate + 7 days, "Too early");
-        require(!hasCalledVRF, "Already VRFed");
-        isRefundOpen = true;
+    /**
+     *  @notice Get list token ID of owner address.
+     *
+     *  @dev    Only admin can call this function.
+     */
+    function tokensOfOwner(address owner)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 count = balanceOf(owner);
+        uint256[] memory ids = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            ids[i] = tokenOfOwnerByIndex(owner, i);
+        }
+        return ids;
     }
 
-    function getRefund(uint256[] calldata ids) external nonReentrant {
+    function getRefund() external nonReentrant {
         require(block.timestamp > endDate, "Lottery not over");
         require(
-            tokenCounter < minTicketsToSell || isRefundOpen,
+            tokenCounter < minTicketsToSell || !hasCalledVRF,
             "Enough tickets sold"
         );
+        uint256[] memory ids = tokensOfOwner(_msgSender());
         uint256 refundAmount = 0;
         for (uint256 i = 0; i < ids.length; i++) {
-            require(ownerOf(ids[i]) == msg.sender, "Not owner");
             _burn(ids[i]);
             refundAmount = refundAmount.add(ticketPrice);
         }
